@@ -1,4 +1,5 @@
 """Shared fixtures and mocks for RAG chatbot tests"""
+
 import pytest
 from unittest.mock import Mock, MagicMock, patch
 from dataclasses import dataclass
@@ -19,24 +20,20 @@ def sample_search_results():
     return SearchResults(
         documents=[
             "Claude models support tool use for external integrations.",
-            "The API allows you to define custom tools with schemas."
+            "The API allows you to define custom tools with schemas.",
         ],
         metadata=[
             {"course_title": "Building Towards Computer Use", "lesson_number": 3},
-            {"course_title": "Building Towards Computer Use", "lesson_number": 4}
+            {"course_title": "Building Towards Computer Use", "lesson_number": 4},
         ],
-        distances=[0.15, 0.25]
+        distances=[0.15, 0.25],
     )
 
 
 @pytest.fixture
 def empty_search_results():
     """Create empty SearchResults for testing"""
-    return SearchResults(
-        documents=[],
-        metadata=[],
-        distances=[]
-    )
+    return SearchResults(documents=[], metadata=[], distances=[])
 
 
 @pytest.fixture
@@ -61,10 +58,22 @@ def sample_course():
         course_link="https://example.com/mcp-course",
         instructor="Test Instructor",
         lessons=[
-            Lesson(lesson_number=1, title="Getting Started", lesson_link="https://example.com/lesson1"),
-            Lesson(lesson_number=2, title="Building Servers", lesson_link="https://example.com/lesson2"),
-            Lesson(lesson_number=3, title="Advanced Topics", lesson_link="https://example.com/lesson3")
-        ]
+            Lesson(
+                lesson_number=1,
+                title="Getting Started",
+                lesson_link="https://example.com/lesson1",
+            ),
+            Lesson(
+                lesson_number=2,
+                title="Building Servers",
+                lesson_link="https://example.com/lesson2",
+            ),
+            Lesson(
+                lesson_number=3,
+                title="Advanced Topics",
+                lesson_link="https://example.com/lesson3",
+            ),
+        ],
     )
 
 
@@ -76,14 +85,14 @@ def sample_course_chunks():
             content="MCP servers allow Claude to interact with external systems.",
             course_title="Introduction to MCP Servers",
             lesson_number=1,
-            chunk_index=0
+            chunk_index=0,
         ),
         CourseChunk(
             content="You can build custom tools using the MCP protocol.",
             course_title="Introduction to MCP Servers",
             lesson_number=2,
-            chunk_index=1
-        )
+            chunk_index=1,
+        ),
     ]
 
 
@@ -111,7 +120,7 @@ def mock_anthropic_tool_use_response():
     tool_use_block.id = "tool_123"
     tool_use_block.input = {
         "query": "tool use",
-        "course_name": "Building Towards Computer Use"
+        "course_name": "Building Towards Computer Use",
     }
 
     mock_response.content = [tool_use_block]
@@ -136,15 +145,28 @@ def sample_course_outline():
         "course_title": "Building Towards Computer Use",
         "course_link": "https://example.com/course",
         "lessons": [
-            {"lesson_number": 1, "lesson_title": "Introduction", "lesson_link": "https://example.com/l1"},
-            {"lesson_number": 2, "lesson_title": "Tool Use Basics", "lesson_link": "https://example.com/l2"},
-            {"lesson_number": 3, "lesson_title": "Advanced Tools", "lesson_link": "https://example.com/l3"}
-        ]
+            {
+                "lesson_number": 1,
+                "lesson_title": "Introduction",
+                "lesson_link": "https://example.com/l1",
+            },
+            {
+                "lesson_number": 2,
+                "lesson_title": "Tool Use Basics",
+                "lesson_link": "https://example.com/l2",
+            },
+            {
+                "lesson_number": 3,
+                "lesson_title": "Advanced Tools",
+                "lesson_link": "https://example.com/l3",
+            },
+        ],
     }
 
 
 class MockConfig:
     """Mock configuration for testing"""
+
     ANTHROPIC_API_KEY = "test-api-key"
     ANTHROPIC_MODEL = "claude-sonnet-4-20250514"
     EMBEDDING_MODEL = "all-MiniLM-L6-v2"

@@ -1,4 +1,5 @@
 """Tests for CourseSearchTool.execute() method in search_tools.py"""
+
 import pytest
 from unittest.mock import Mock, MagicMock
 import sys
@@ -13,7 +14,9 @@ from vector_store import SearchResults
 class TestCourseSearchToolExecute:
     """Tests for CourseSearchTool.execute() method"""
 
-    def test_execute_basic_query_returns_formatted_results(self, mock_vector_store, sample_search_results):
+    def test_execute_basic_query_returns_formatted_results(
+        self, mock_vector_store, sample_search_results
+    ):
         """Test that execute() returns properly formatted results for basic query"""
         mock_vector_store.search.return_value = sample_search_results
         mock_vector_store.get_lesson_link.return_value = "https://example.com/lesson"
@@ -24,9 +27,7 @@ class TestCourseSearchToolExecute:
         assert "[Building Towards Computer Use - Lesson 3]" in result
         assert "Claude models support tool use" in result
         mock_vector_store.search.assert_called_once_with(
-            query="tool use",
-            course_name=None,
-            lesson_number=None
+            query="tool use", course_name=None, lesson_number=None
         )
 
     def test_execute_with_course_filter(self, mock_vector_store, sample_search_results):
@@ -38,9 +39,7 @@ class TestCourseSearchToolExecute:
         result = tool.execute(query="prompting", course_name="MCP")
 
         mock_vector_store.search.assert_called_once_with(
-            query="prompting",
-            course_name="MCP",
-            lesson_number=None
+            query="prompting", course_name="MCP", lesson_number=None
         )
 
     def test_execute_with_lesson_filter(self, mock_vector_store, sample_search_results):
@@ -52,9 +51,7 @@ class TestCourseSearchToolExecute:
         result = tool.execute(query="introduction", lesson_number=1)
 
         mock_vector_store.search.assert_called_once_with(
-            query="introduction",
-            course_name=None,
-            lesson_number=1
+            query="introduction", course_name=None, lesson_number=1
         )
 
     def test_execute_with_both_filters(self, mock_vector_store, sample_search_results):
@@ -66,16 +63,18 @@ class TestCourseSearchToolExecute:
         result = tool.execute(
             query="computer use",
             course_name="Building Towards Computer Use",
-            lesson_number=2
+            lesson_number=2,
         )
 
         mock_vector_store.search.assert_called_once_with(
             query="computer use",
             course_name="Building Towards Computer Use",
-            lesson_number=2
+            lesson_number=2,
         )
 
-    def test_execute_returns_error_when_search_fails(self, mock_vector_store, error_search_results):
+    def test_execute_returns_error_when_search_fails(
+        self, mock_vector_store, error_search_results
+    ):
         """Test that execute() returns error message when search has error"""
         mock_vector_store.search.return_value = error_search_results
 
@@ -84,7 +83,9 @@ class TestCourseSearchToolExecute:
 
         assert "No course found matching 'NonExistent Course'" in result
 
-    def test_execute_returns_no_results_message(self, mock_vector_store, empty_search_results):
+    def test_execute_returns_no_results_message(
+        self, mock_vector_store, empty_search_results
+    ):
         """Test that execute() returns appropriate message when no results found"""
         mock_vector_store.search.return_value = empty_search_results
 
@@ -93,16 +94,14 @@ class TestCourseSearchToolExecute:
 
         assert "No relevant content found" in result
 
-    def test_execute_no_results_includes_filter_info(self, mock_vector_store, empty_search_results):
+    def test_execute_no_results_includes_filter_info(
+        self, mock_vector_store, empty_search_results
+    ):
         """Test that empty results message includes filter context"""
         mock_vector_store.search.return_value = empty_search_results
 
         tool = CourseSearchTool(mock_vector_store)
-        result = tool.execute(
-            query="topic",
-            course_name="MCP",
-            lesson_number=5
-        )
+        result = tool.execute(query="topic", course_name="MCP", lesson_number=5)
 
         assert "in course 'MCP'" in result
         assert "in lesson 5" in result
@@ -116,7 +115,9 @@ class TestCourseSearchToolExecute:
         tool.execute(query="tool use")
 
         assert len(tool.last_sources) == 2
-        assert tool.last_sources[0]["text"] == "Building Towards Computer Use - Lesson 3"
+        assert (
+            tool.last_sources[0]["text"] == "Building Towards Computer Use - Lesson 3"
+        )
         assert tool.last_sources[0]["link"] == "https://example.com/lesson3"
 
     def test_execute_handles_missing_lesson_number_in_metadata(self, mock_vector_store):
@@ -124,7 +125,7 @@ class TestCourseSearchToolExecute:
         results = SearchResults(
             documents=["Some content without lesson info"],
             metadata=[{"course_title": "Test Course"}],  # No lesson_number
-            distances=[0.1]
+            distances=[0.1],
         )
         mock_vector_store.search.return_value = results
         mock_vector_store.get_lesson_link.return_value = None
@@ -136,7 +137,9 @@ class TestCourseSearchToolExecute:
         assert "[Test Course]" in result
         assert "Lesson" not in result.split("]")[0]  # No lesson in header
 
-    def test_execute_formats_multiple_results(self, mock_vector_store, sample_search_results):
+    def test_execute_formats_multiple_results(
+        self, mock_vector_store, sample_search_results
+    ):
         """Test that multiple results are separated properly"""
         mock_vector_store.search.return_value = sample_search_results
         mock_vector_store.get_lesson_link.return_value = None
@@ -187,7 +190,9 @@ class TestCourseSearchToolDefinition:
 class TestCourseOutlineToolExecute:
     """Tests for CourseOutlineTool.execute() method"""
 
-    def test_execute_returns_formatted_outline(self, mock_vector_store, sample_course_outline):
+    def test_execute_returns_formatted_outline(
+        self, mock_vector_store, sample_course_outline
+    ):
         """Test that execute() returns properly formatted course outline"""
         mock_vector_store.get_course_outline.return_value = sample_course_outline
 
@@ -259,7 +264,9 @@ class TestToolManager:
         assert "search_course_content" in names
         assert "get_course_outline" in names
 
-    def test_execute_tool_calls_correct_tool(self, mock_vector_store, sample_search_results):
+    def test_execute_tool_calls_correct_tool(
+        self, mock_vector_store, sample_search_results
+    ):
         """Test that execute_tool routes to the correct tool"""
         mock_vector_store.search.return_value = sample_search_results
         mock_vector_store.get_lesson_link.return_value = None
@@ -280,7 +287,9 @@ class TestToolManager:
 
         assert "Tool 'nonexistent_tool' not found" in result
 
-    def test_get_last_sources_returns_sources_from_tools(self, mock_vector_store, sample_search_results):
+    def test_get_last_sources_returns_sources_from_tools(
+        self, mock_vector_store, sample_search_results
+    ):
         """Test that get_last_sources aggregates sources from tools"""
         mock_vector_store.search.return_value = sample_search_results
         mock_vector_store.get_lesson_link.return_value = None
@@ -294,7 +303,9 @@ class TestToolManager:
 
         assert len(sources) == 2
 
-    def test_reset_sources_clears_all_tool_sources(self, mock_vector_store, sample_search_results):
+    def test_reset_sources_clears_all_tool_sources(
+        self, mock_vector_store, sample_search_results
+    ):
         """Test that reset_sources clears sources from all tools"""
         mock_vector_store.search.return_value = sample_search_results
         mock_vector_store.get_lesson_link.return_value = None

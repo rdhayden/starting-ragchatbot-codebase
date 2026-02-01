@@ -14,6 +14,9 @@ This is a RAG (Retrieval-Augmented Generation) chatbot for educational course ma
 # Install dependencies
 uv sync
 
+# Install with dev dependencies (includes black formatter)
+uv sync --extra dev
+
 # Run the application (from project root)
 ./run.sh
 
@@ -22,6 +25,16 @@ cd backend && uv run uvicorn app:app --reload --port 8000
 ```
 
 Access at http://localhost:8000 (API docs at /docs)
+
+## Code Quality
+
+```bash
+# Format code with black
+./scripts/format.sh
+
+# Run all quality checks (formatting)
+./scripts/check.sh
+```
 
 ## Architecture
 

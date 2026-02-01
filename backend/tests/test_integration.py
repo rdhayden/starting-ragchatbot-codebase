@@ -1,4 +1,5 @@
 """Integration tests using real components (except external API calls)"""
+
 import pytest
 import tempfile
 import os
@@ -27,9 +28,7 @@ def temp_chroma_dir():
 def real_vector_store(temp_chroma_dir):
     """Create a real VectorStore with temporary storage"""
     return VectorStore(
-        chroma_path=temp_chroma_dir,
-        embedding_model="all-MiniLM-L6-v2",
-        max_results=5
+        chroma_path=temp_chroma_dir, embedding_model="all-MiniLM-L6-v2", max_results=5
     )
 
 
@@ -80,9 +79,15 @@ class TestVectorStoreIntegration:
             course_link="https://example.com/test",
             instructor="Test Instructor",
             lessons=[
-                Lesson(lesson_number=1, title="Intro", lesson_link="https://example.com/l1"),
-                Lesson(lesson_number=2, title="Advanced", lesson_link="https://example.com/l2")
-            ]
+                Lesson(
+                    lesson_number=1, title="Intro", lesson_link="https://example.com/l1"
+                ),
+                Lesson(
+                    lesson_number=2,
+                    title="Advanced",
+                    lesson_link="https://example.com/l2",
+                ),
+            ],
         )
         real_vector_store.add_course_metadata(course)
 
@@ -92,14 +97,14 @@ class TestVectorStoreIntegration:
                 content="Machine learning is a subset of artificial intelligence that enables systems to learn from data.",
                 course_title="Test AI Course",
                 lesson_number=1,
-                chunk_index=0
+                chunk_index=0,
             ),
             CourseChunk(
                 content="Neural networks are computational models inspired by biological neurons.",
                 course_title="Test AI Course",
                 lesson_number=2,
-                chunk_index=1
-            )
+                chunk_index=1,
+            ),
         ]
         real_vector_store.add_course_content(chunks)
 
@@ -120,8 +125,18 @@ class TestVectorStoreIntegration:
 
         # Add content for both
         chunks = [
-            CourseChunk(content="Variables store data values", course_title="Python Basics", lesson_number=1, chunk_index=0),
-            CourseChunk(content="Variables store data values in JavaScript", course_title="JavaScript Fundamentals", lesson_number=1, chunk_index=1)
+            CourseChunk(
+                content="Variables store data values",
+                course_title="Python Basics",
+                lesson_number=1,
+                chunk_index=0,
+            ),
+            CourseChunk(
+                content="Variables store data values in JavaScript",
+                course_title="JavaScript Fundamentals",
+                lesson_number=1,
+                chunk_index=1,
+            ),
         ]
         real_vector_store.add_course_content(chunks)
 
@@ -134,7 +149,9 @@ class TestVectorStoreIntegration:
 
     def test_search_returns_empty_for_nonexistent_course(self, real_vector_store):
         """Test that searching in nonexistent course returns appropriate error"""
-        results = real_vector_store.search("test query", course_name="NonExistent Course")
+        results = real_vector_store.search(
+            "test query", course_name="NonExistent Course"
+        )
 
         assert results.error is not None
         assert "No course found" in results.error
@@ -146,10 +163,22 @@ class TestVectorStoreIntegration:
             course_link="https://example.com/webdev",
             instructor="Web Expert",
             lessons=[
-                Lesson(lesson_number=1, title="HTML Basics", lesson_link="https://example.com/l1"),
-                Lesson(lesson_number=2, title="CSS Styling", lesson_link="https://example.com/l2"),
-                Lesson(lesson_number=3, title="JavaScript", lesson_link="https://example.com/l3")
-            ]
+                Lesson(
+                    lesson_number=1,
+                    title="HTML Basics",
+                    lesson_link="https://example.com/l1",
+                ),
+                Lesson(
+                    lesson_number=2,
+                    title="CSS Styling",
+                    lesson_link="https://example.com/l2",
+                ),
+                Lesson(
+                    lesson_number=3,
+                    title="JavaScript",
+                    lesson_link="https://example.com/l3",
+                ),
+            ],
         )
         real_vector_store.add_course_metadata(course)
 
@@ -166,9 +195,17 @@ class TestVectorStoreIntegration:
         course = Course(
             title="Data Science 101",
             lessons=[
-                Lesson(lesson_number=1, title="Pandas", lesson_link="https://example.com/pandas"),
-                Lesson(lesson_number=2, title="NumPy", lesson_link="https://example.com/numpy")
-            ]
+                Lesson(
+                    lesson_number=1,
+                    title="Pandas",
+                    lesson_link="https://example.com/pandas",
+                ),
+                Lesson(
+                    lesson_number=2,
+                    title="NumPy",
+                    lesson_link="https://example.com/numpy",
+                ),
+            ],
         )
         real_vector_store.add_course_metadata(course)
 
@@ -185,7 +222,13 @@ class TestSearchToolIntegration:
         # Setup course data
         course = Course(
             title="API Development Course",
-            lessons=[Lesson(lesson_number=1, title="REST APIs", lesson_link="https://example.com/api1")]
+            lessons=[
+                Lesson(
+                    lesson_number=1,
+                    title="REST APIs",
+                    lesson_link="https://example.com/api1",
+                )
+            ],
         )
         real_vector_store.add_course_metadata(course)
 
@@ -194,7 +237,7 @@ class TestSearchToolIntegration:
                 content="REST APIs use HTTP methods like GET, POST, PUT, and DELETE.",
                 course_title="API Development Course",
                 lesson_number=1,
-                chunk_index=0
+                chunk_index=0,
             )
         ]
         real_vector_store.add_course_content(chunks)
@@ -210,7 +253,13 @@ class TestSearchToolIntegration:
         """Test that search tool correctly tracks sources for UI"""
         course = Course(
             title="Testing Course",
-            lessons=[Lesson(lesson_number=5, title="Unit Tests", lesson_link="https://example.com/unit-tests")]
+            lessons=[
+                Lesson(
+                    lesson_number=5,
+                    title="Unit Tests",
+                    lesson_link="https://example.com/unit-tests",
+                )
+            ],
         )
         real_vector_store.add_course_metadata(course)
 
@@ -219,7 +268,7 @@ class TestSearchToolIntegration:
                 content="Unit tests verify individual components work correctly.",
                 course_title="Testing Course",
                 lesson_number=5,
-                chunk_index=0
+                chunk_index=0,
             )
         ]
         real_vector_store.add_course_content(chunks)
@@ -276,7 +325,13 @@ class TestToolManagerIntegration:
         course = Course(
             title="Integration Test Course",
             course_link="https://example.com/integration",
-            lessons=[Lesson(lesson_number=1, title="Testing", lesson_link="https://example.com/l1")]
+            lessons=[
+                Lesson(
+                    lesson_number=1,
+                    title="Testing",
+                    lesson_link="https://example.com/l1",
+                )
+            ],
         )
         real_vector_store.add_course_metadata(course)
 
@@ -285,7 +340,7 @@ class TestToolManagerIntegration:
                 content="Integration testing verifies multiple components work together.",
                 course_title="Integration Test Course",
                 lesson_number=1,
-                chunk_index=0
+                chunk_index=0,
             )
         ]
         real_vector_store.add_course_content(chunks)
@@ -298,11 +353,15 @@ class TestToolManagerIntegration:
         manager.register_tool(outline_tool)
 
         # Test search execution
-        search_result = manager.execute_tool("search_course_content", query="integration testing")
+        search_result = manager.execute_tool(
+            "search_course_content", query="integration testing"
+        )
         assert "Integration Test Course" in search_result
 
         # Test outline execution
-        outline_result = manager.execute_tool("get_course_outline", course_name="Integration")
+        outline_result = manager.execute_tool(
+            "get_course_outline", course_name="Integration"
+        )
         assert "Integration Test Course" in outline_result
         assert "Testing" in outline_result
 
@@ -314,7 +373,7 @@ class TestToolManagerIntegration:
 class TestRAGSystemIntegration:
     """Integration tests for the complete RAG system"""
 
-    @patch('rag_system.AIGenerator')
+    @patch("rag_system.AIGenerator")
     def test_rag_system_with_real_document_processing(
         self, mock_ai_class, temp_chroma_dir, sample_course_file
     ):
@@ -349,13 +408,15 @@ class TestRAGSystemIntegration:
         assert analytics["total_courses"] == 1
         assert "Introduction to AI Tools" in analytics["course_titles"]
 
-    @patch('rag_system.AIGenerator')
+    @patch("rag_system.AIGenerator")
     def test_rag_system_query_uses_real_search(
         self, mock_ai_class, temp_chroma_dir, sample_course_file
     ):
         """Test that RAG system query actually searches the vector store"""
         mock_ai = Mock()
-        mock_ai.generate_response.return_value = "Tool use enables external interactions."
+        mock_ai.generate_response.return_value = (
+            "Tool use enables external interactions."
+        )
         mock_ai_class.return_value = mock_ai
 
         class TestConfig:
@@ -375,12 +436,13 @@ class TestRAGSystemIntegration:
 
         # Execute search manually through tool manager
         search_result = rag.tool_manager.execute_tool(
-            "search_course_content",
-            query="tool use function calling"
+            "search_course_content", query="tool use function calling"
         )
 
         # Verify search found relevant content
-        assert "Introduction to AI Tools" in search_result or "Tool use" in search_result
+        assert (
+            "Introduction to AI Tools" in search_result or "Tool use" in search_result
+        )
 
 
 class TestEdgeCases:
@@ -403,7 +465,7 @@ class TestEdgeCases:
                 content="Regular content here",
                 course_title="Test Course",
                 lesson_number=1,
-                chunk_index=0
+                chunk_index=0,
             )
         ]
         real_vector_store.add_course_content(chunks)
@@ -426,7 +488,9 @@ class TestEdgeCases:
         real_vector_store.add_course_metadata(course)
 
         chunks = [
-            CourseChunk(content="Content", course_title="Test", lesson_number=1, chunk_index=0)
+            CourseChunk(
+                content="Content", course_title="Test", lesson_number=1, chunk_index=0
+            )
         ]
         real_vector_store.add_course_content(chunks)
 
