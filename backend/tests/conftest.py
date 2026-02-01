@@ -13,6 +13,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from vector_store import SearchResults
 from models import Course, Lesson, CourseChunk
 
+# API testing imports
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from pydantic import BaseModel
+
 
 @pytest.fixture
 def sample_search_results():
@@ -181,3 +186,175 @@ class MockConfig:
 def mock_config():
     """Return mock configuration"""
     return MockConfig()
+
+
+# =============================================================================
+# API Testing Fixtures
+# =============================================================================
+
+@pytest.fixture
+def mock_rag_system():
+    """Create a mock RAGSystem for API testing"""
+    mock = Mock()
+
+    # Mock session_manager
+    mock.session_manager = Mock()
+    mock.session_manager.create_session.return_value = "test-session-123"
+
+    # Mock query method - returns (answer, sources)
+    mock.query.return_value = (
+        "This is a test answer about course content.",
+        [
+            {"text": "Building Towards Computer Use - Lesson 3", "link": "https://example.com/lesson3"},
+            {"text": "Building Towards Computer Use - Lesson 4", "link": "https://example.com/lesson4"}
+        ]
+    )
+
+    # Mock get_course_analytics
+    mock.get_course_analytics.return_value = {
+        "total_courses": 3,
+        "course_titles": [
+            "Building Towards Computer Use",
+            "Introduction to MCP Servers",
+            "Advanced Claude Techniques"
+        ]
+    }
+
+    return mock
+
+
+@pytest.fixture
+def mock_rag_system_error():
+    """Create a mock RAGSystem that raises errors"""
+    mock = Mock()
+    mock.session_manager = Mock()
+    mock.session_manager.create_session.return_value = "test-session-123"
+    mock.query.side_effect = Exception("Database connection failed")
+    mock.get_course_analytics.side_effect = Exception("Failed to fetch analytics")
+    return mock
+
+
+@pytest.fixture
+def mock_rag_system_empty():
+    """Create a mock RAGSystem with empty results"""
+    mock = Mock()
+    mock.session_manager = Mock()
+    mock.session_manager.create_session.return_value = "test-session-456"
+    mock.query.return_value = (
+        "I couldn't find any relevant information about that topic.",
+        []
+    )
+    mock.get_course_analytics.return_value = {
+        "total_courses": 0,
+        "course_titles": []
+    }
+    return mock
+
+
+def create_test_app(mock_rag_system):
+    """
+    Create a test FastAPI app without static file mounting.
+    This avoids the '../frontend' directory dependency.
+    """
+    from pydantic import BaseModel
+    from typing import List, Optional
+    from fastapi import FastAPI, HTTPException
+
+    app = FastAPI(title="Course Materials RAG System - Test")
+
+    class QueryRequest(BaseModel):
+        query: str
+        session_id: Optional[str] = None
+
+    class SourceItem(BaseModel):
+        text: str
+        link: Optional[str] = None
+
+    class QueryResponse(BaseModel):
+        answer: str
+        sources: List[SourceItem]
+        session_id: str
+
+    class CourseStats(BaseModel):
+        total_courses: int
+        course_titles: List[str]
+
+    @app.post("/api/query", response_model=QueryResponse)
+    async def query_documents(request: QueryRequest):
+        try:
+            session_id = request.session_id
+            if not session_id:
+                session_id = mock_rag_system.session_manager.create_session()
+
+            answer, sources = mock_rag_system.query(request.query, session_id)
+
+            source_items = []
+            for s in sources:
+                if isinstance(s, dict):
+                    source_items.append(SourceItem(text=s["text"], link=s.get("link")))
+                else:
+                    source_items.append(SourceItem(text=s, link=None))
+
+            return QueryResponse(
+                answer=answer,
+                sources=source_items,
+                session_id=session_id
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.get("/api/courses", response_model=CourseStats)
+    async def get_course_stats():
+        try:
+            analytics = mock_rag_system.get_course_analytics()
+            return CourseStats(
+                total_courses=analytics["total_courses"],
+                course_titles=analytics["course_titles"]
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.get("/")
+    async def root():
+        return {"message": "Course Materials RAG System API"}
+
+    return app
+
+
+@pytest.fixture
+def test_client(mock_rag_system):
+    """Create a TestClient with mocked RAGSystem"""
+    app = create_test_app(mock_rag_system)
+    return TestClient(app)
+
+
+@pytest.fixture
+def test_client_error(mock_rag_system_error):
+    """Create a TestClient that returns errors"""
+    app = create_test_app(mock_rag_system_error)
+    return TestClient(app)
+
+
+@pytest.fixture
+def test_client_empty(mock_rag_system_empty):
+    """Create a TestClient with empty results"""
+    app = create_test_app(mock_rag_system_empty)
+    return TestClient(app)
+
+
+@pytest.fixture
+def sample_query_request():
+    """Sample query request data"""
+    return {
+        "query": "What is tool use in Claude?",
+        "session_id": None
+    }
+
+
+@pytest.fixture
+def sample_query_request_with_session():
+    """Sample query request with existing session"""
+    return {
+        "query": "Tell me more about the previous topic",
+        "session_id": "existing-session-789"
+    }
