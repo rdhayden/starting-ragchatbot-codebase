@@ -137,23 +137,23 @@ class VectorStore:
         import json
 
         course_text = course.title
-        
+
         # Build lessons metadata and serialize as JSON string
         lessons_metadata = []
         for lesson in course.lessons:
             lessons_metadata.append({
                 "lesson_number": lesson.lesson_number,
                 "lesson_title": lesson.title,
-                "lesson_link": lesson.lesson_link
+                "lesson_link": lesson.lesson_link or ""  # ChromaDB doesn't accept None
             })
-        
+
         self.course_catalog.add(
             documents=[course_text],
             metadatas=[{
                 "title": course.title,
-                "instructor": course.instructor,
-                "course_link": course.course_link,
-                "lessons_json": json.dumps(lessons_metadata),  # Serialize as JSON string
+                "instructor": course.instructor or "",  # ChromaDB doesn't accept None
+                "course_link": course.course_link or "",  # ChromaDB doesn't accept None
+                "lessons_json": json.dumps(lessons_metadata),
                 "lesson_count": len(course.lessons)
             }],
             ids=[course.title]
@@ -264,4 +264,40 @@ class VectorStore:
             return None
         except Exception as e:
             print(f"Error getting lesson link: {e}")
+
+    def get_course_outline(self, course_name: str) -> Optional[Dict[str, Any]]:
+        """
+        Get course outline including title, link, and all lessons.
+
+        Args:
+            course_name: Course name to search for (partial matches work)
+
+        Returns:
+            Dict with course_title, course_link, and lessons list, or None if not found
+        """
+        import json
+        try:
+            # Use semantic search to find the best matching course
+            resolved_title = self._resolve_course_name(course_name)
+            if not resolved_title:
+                return None
+
+            # Get course by ID (title is the ID)
+            results = self.course_catalog.get(ids=[resolved_title])
+            if results and 'metadatas' in results and results['metadatas']:
+                metadata = results['metadatas'][0]
+                lessons = []
+                lessons_json = metadata.get('lessons_json')
+                if lessons_json:
+                    lessons = json.loads(lessons_json)
+
+                return {
+                    "course_title": metadata.get('title'),
+                    "course_link": metadata.get('course_link'),
+                    "lessons": lessons
+                }
+            return None
+        except Exception as e:
+            print(f"Error getting course outline: {e}")
+            return None
     

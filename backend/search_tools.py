@@ -89,29 +89,99 @@ class CourseSearchTool(Tool):
         """Format search results with course and lesson context"""
         formatted = []
         sources = []  # Track sources for the UI
-        
+
         for doc, meta in zip(results.documents, results.metadata):
             course_title = meta.get('course_title', 'unknown')
             lesson_num = meta.get('lesson_number')
-            
+
             # Build context header
             header = f"[{course_title}"
             if lesson_num is not None:
                 header += f" - Lesson {lesson_num}"
             header += "]"
-            
-            # Track source for the UI
-            source = course_title
+
+            # Build display text for source
+            display_text = course_title
             if lesson_num is not None:
-                source += f" - Lesson {lesson_num}"
-            sources.append(source)
-            
+                display_text += f" - Lesson {lesson_num}"
+
+            # Fetch lesson link from course_catalog
+            link = None
+            if lesson_num is not None:
+                link = self.store.get_lesson_link(course_title, lesson_num)
+
+            sources.append({"text": display_text, "link": link})
             formatted.append(f"{header}\n{doc}")
-        
+
         # Store sources for retrieval
         self.last_sources = sources
-        
+
         return "\n\n".join(formatted)
+
+
+class CourseOutlineTool(Tool):
+    """Tool for retrieving course outline including title, link, and lesson list"""
+
+    def __init__(self, vector_store: VectorStore):
+        self.store = vector_store
+        self.last_sources = []  # Track sources for the UI
+
+    def get_tool_definition(self) -> Dict[str, Any]:
+        """Return Anthropic tool definition for this tool"""
+        return {
+            "name": "get_course_outline",
+            "description": "Get course outline including course title, course link, and complete lesson list with lesson numbers and titles. Use this for questions about course structure, syllabus, or what lessons are available.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "course_name": {
+                        "type": "string",
+                        "description": "Course title to get outline for (partial matches work, e.g. 'MCP', 'Introduction')"
+                    }
+                },
+                "required": ["course_name"]
+            }
+        }
+
+    def execute(self, course_name: str) -> str:
+        """
+        Execute the course outline tool.
+
+        Args:
+            course_name: Course title to get outline for
+
+        Returns:
+            Formatted course outline or error message
+        """
+        outline = self.store.get_course_outline(course_name)
+
+        if not outline:
+            return f"No course found matching '{course_name}'."
+
+        # Track source for the UI
+        self.last_sources = [{
+            "text": outline["course_title"],
+            "link": outline["course_link"]
+        }]
+
+        return self._format_outline(outline)
+
+    def _format_outline(self, outline: Dict[str, Any]) -> str:
+        """Format course outline for AI response"""
+        lines = [
+            f"Course Title: {outline['course_title']}",
+            f"Course Link: {outline['course_link'] or 'Not available'}",
+            "",
+            "Lessons:"
+        ]
+
+        for lesson in outline["lessons"]:
+            lesson_num = lesson.get("lesson_number")
+            lesson_title = lesson.get("lesson_title", "Untitled")
+            lines.append(f"  Lesson {lesson_num}: {lesson_title}")
+
+        return "\n".join(lines)
+
 
 class ToolManager:
     """Manages available tools for the AI"""
